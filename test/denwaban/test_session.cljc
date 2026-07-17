@@ -1,0 +1,37 @@
+(ns denwaban.test-session
+  (:require [clojure.test :refer [deftest is testing]]
+            [denwaban.session :as s]))
+
+(deftest pipeline-composes-existing-actors
+  (testing "the five stages bind the already-existing actors (no duplicate impl)"
+    (let [plan (s/plan-session {})
+          by-stage (into {} (map (juxt :stage :actor) (:stages plan)))]
+      (is (= "twilio-compat"     (:ingress  by-stage)))
+      (is (= "whisper-compat"    (:listen   by-stage)))
+      (is (= "elevenlabs-compat" (:speak    by-stage)))
+      (is (= "yotei"             (:book     by-stage)))
+      (is (= 'koe.session/converse (get-in plan [:kernel :session])))
+      (is (= 'koe.ports/IBooking (get-in plan [:kernel :ports :book]))))))
+
+(deftest booking-is-delegated-to-yotei
+  (testing "G2: denwaban never owns the booking — yotei is the source of truth"
+    (let [plan (s/plan-session {})]
+      (is (s/delegates-booking? plan))
+      (is (= "yotei" (:booking-owner plan)))
+      (is (not= "denwaban" (:booking-owner plan))))))
+
+(deftest webrtc-only-swaps-ingress
+  (testing "a WebRTC soft-phone swaps only the ingress transport (ADR-2606271800)"
+    (let [plan (s/plan-session {:reach :webrtc})
+          ingress (first (:stages plan))]
+      (is (= "kotoba-net/webrtc" (:actor ingress)))
+      (is (= :webrtc (:reach plan))))))
+
+(deftest recording-transient-by-default
+  (testing "G1: no recording retention without explicit consent"
+    (is (= :transient (:recording (s/plan-session {}))))))
+
+(deftest run-session-is-r0-gated
+  (testing "G7: live call raises at R0"
+    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs cljs.core/ExceptionInfo)
+                 (s/run-session {})))))

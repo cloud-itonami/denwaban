@@ -1,0 +1,8 @@
+{:paths ["src" "test"]
+ :deps {com.junkawasaki/koe-clj
+        {:git/url "https://github.com/com-junkawasaki/koe-clj.git"
+         :git/sha "ceca39b877f3285f4bacbca9270190670b0d5c90"}
+        com.etzhayyim/social-publication
+        {:git/url "https://github.com/etzhayyim/com-etzhayyim-social-publication.git"
+         :git/sha "e8127d0661284b1c12ce1b216c84b5ed2db619ab"}}
+ :tasks {test {:task (load-file "run_tests.clj")}}}
