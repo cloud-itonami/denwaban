@@ -14,7 +14,14 @@
          :git/sha "ceca39b877f3285f4bacbca9270190670b0d5c90"}
         io.github.kotoba-lang/social-publication
         {:git/url "https://github.com/kotoba-lang/social-publication.git"
-         :git/sha "e8127d0661284b1c12ce1b216c84b5ed2db619ab"}}
+         :git/sha "e8127d0661284b1c12ce1b216c84b5ed2db619ab"}
+
+        ;; The HTTP surface's JSON codec. com.sun.net.httpserver is JDK-provided, so
+        ;; the surface adds no server dependency -- only this.
+        org.clojure/data.json {:mvn/version "2.5.1"}}
  :aliases
  {:test {:extra-paths ["test"]
-         :main-opts ["-i" "run_tests.clj"]}}}
+         :main-opts ["-i" "run_tests.clj"]}
+  ;; clojure -M:serve -> the consent surface (loopback :1343). One listener; see
+  ;; denwaban.http's docstring for why there is no operator port.
+  :serve {:main-opts ["-m" "denwaban.http"]}}}
