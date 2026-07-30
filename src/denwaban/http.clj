@@ -172,15 +172,52 @@
 ;; listener
 ;; ---------------------------------------------------------------------------
 
+(def consent-token-env
+  "The consent surface's shared secret with whichever app holds the Passkey ceremony.
+
+  Loopback binding was the only thing guarding POST /commit, and loopback is not an
+  authorisation: every process on the host shares it.
+
+  The stakes here are lower than at the other two actors -- every outward op is refused
+  at G7 regardless of who asked -- but the refusal is not the only thing this surface
+  produces. It answers with the pipeline it declined to run and the caller's own
+  request, and an unauthenticated caller should not be able to probe that, nor to fill
+  a log with proposals nobody made. The token also means this actor does not become the
+  one place in the fleet where an app's consent claim is taken on trust."
+  "VOICE_CONSENT_TOKEN")
+
+(def consent-token-header "X-VOICE-CONSENT-TOKEN")
+
+(defn consent-token
+  "The configured consent token, or nil when unset. Read at call time."
+  []
+  (let [t (System/getenv consent-token-env)]
+    (when (and t (seq t)) t)))
+
 (defn handler []
   (reify HttpHandler
     (handle [_ exchange]
       (try
         (let [method (.getRequestMethod ^HttpExchange exchange)
-              path (.getPath (.getRequestURI ^HttpExchange exchange))]
+              path (.getPath (.getRequestURI ^HttpExchange exchange))
+              expected (consent-token)
+              presented (.getFirst (.getRequestHeaders ^HttpExchange exchange)
+                                   consent-token-header)]
           (cond
+            ;; /healthz stays open. It is how a deployment learns this actor cannot
+            ;; answer calls at all, which it should be able to ask before it has a token.
             (and (= "GET" method) (= "/healthz" path))
             (send! exchange 200 (health))
+
+            (nil? expected)
+            (send! exchange 503
+                   (held :consent-surface-unconfigured
+                         (str consent-token-env
+                              " が未設定のため proposal を受け付けません")
+                         {}))
+
+            (not= expected presented)
+            (send! exchange 401 (held :consent-token-mismatch "" {}))
 
             (and (= "GET" method) (re-matches #"/proposals/[^/]+" path))
             (send! exchange 200
