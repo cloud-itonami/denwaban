@@ -16,7 +16,7 @@
 設計確定: **ADR-2606271930**。詳細は `CLAUDE.md`。
 
 ```
-clojure -M:test    # pipeline 合成 + G2 booking 委譲 + G7 gate + HTTP 面（17 tests / 56 assertions）
+clojure -M:test    # pipeline 合成 + G2 booking 委譲 + G7 gate + social_post 膜の拒否経路 + HTTP 面（29 tests / 91 assertions）
 clojure -M:serve   # consent surface（loopback :1343）
 ```
 
