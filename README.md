@@ -16,7 +16,7 @@
 設計確定: **ADR-2606271930**。詳細は `CLAUDE.md`。
 
 ```
-clojure -M:test    # pipeline 合成 + G2 booking 委譲 + G7 gate + social_post 膜の拒否経路 + HTTP 面（29 tests / 91 assertions）
+clojure -M:test    # pipeline 合成 + G2 booking 委譲 + G7 gate + social_post 膜の拒否経路 + HTTP 面（34 tests / 101 assertions）
 clojure -M:serve   # consent surface（loopback :1343）
 ```
 
@@ -39,9 +39,9 @@ booking client も束ねられていない。ここでの決定はどれも電�
 留めない gate** なので、operator 面は置かない。
 
 ```
-consent (:1343)  POST /commit                 -> held（G7）+ 拒否した plan
-                 GET  /proposals/<reference>   -> 常に unknown
-                 GET  /healthz                 -> can-answer-calls: false
+consent (:1343)  POST /commit                 -> held（G7）+ 拒否した plan   X-VOICE-CONSENT-TOKEN
+                 GET  /proposals/<reference>   -> 常に unknown              X-VOICE-CONSENT-TOKEN
+                 GET  /healthz                 -> can-answer-calls: false   （open）
 ```
 
 **なぜ `pending` ではなく「拒否」なのか。** app 側の authority spine は

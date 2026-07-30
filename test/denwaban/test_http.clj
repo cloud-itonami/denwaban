@@ -25,17 +25,34 @@
   (-> (HttpRequest/newBuilder (URI/create (str "http://127.0.0.1:" port path)))
       (.timeout (Duration/ofSeconds 10))))
 
-(defn- post [port path body]
-  (send-it (.POST (.header (req port path) "Content-Type" "application/json")
+(def consent "test-voice-consent-token")
+
+(defn- post
+  "POST with the consent token attached -- the surface requires it."
+  [port path body]
+  (send-it (.POST (-> (req port path)
+                      (.header "Content-Type" "application/json")
+                      (.header "X-VOICE-CONSENT-TOKEN" consent))
                   (HttpRequest$BodyPublishers/ofString (json/write-str body)))))
 
-(defn- get! [port path] (send-it (.GET (req port path))))
+(defn- post-raw
+  "POST with whatever header pair is given (or none), for the refusal paths."
+  [port path body & [header value]]
+  (let [b (-> (req port path) (.header "Content-Type" "application/json"))
+        b (cond-> b value (.header header value))]
+    (send-it (.POST b (HttpRequest$BodyPublishers/ofString (json/write-str body))))))
+
+(defn- get! [port path]
+  (send-it (.GET (.header (req port path) "X-VOICE-CONSENT-TOKEN" consent))))
+
+(defn- get-open! [port path] (send-it (.GET (req port path))))
 
 (defn- with-surface [f]
-  (let [running (http/start! {:port 0})
+  (with-redefs [http/consent-token (constantly consent)]
+   (let [running (http/start! {:port 0})
         port (.getPort (.getAddress ^com.sun.net.httpserver.HttpServer
                                     (:consent running)))]
-    (try (f port) (finally (http/stop! running)))))
+    (try (f port) (finally (http/stop! running))))))
 
 (defn- proposal [op value]
   {:proposal {:id "p-1" :authority "voice" :op op :value value
@@ -177,3 +194,55 @@
           (let [{:keys [body]} (post port "/commit" (proposal op value))]
             (is (= "held" (:status body)) (str op " -> " (:status body)))))
         (is (= "unknown" (:status (:body (get! port "/proposals/anything")))))))))
+
+;; ---------------------------------------------------------------------------
+;; the consent surface's own token
+;; ---------------------------------------------------------------------------
+
+(deftest a-proposal-without-the-consent-token-is-refused
+  (testing "the G7 refusal is not the only thing this surface produces -- it answers
+            with the pipeline it declined to run, and an unauthenticated caller should
+            not be able to probe that or to fill a log with proposals nobody made"
+    (with-surface
+      (fn [port]
+        (let [{:keys [status body]} (post-raw port "/commit"
+                                              (proposal "call/answer-authority" {}))]
+          (is (= 401 status))
+          (is (= "consent-token-mismatch" (rule body))))))))
+
+(deftest a-wrong-consent-token-is-refused
+  (with-surface
+    (fn [port]
+      (let [{:keys [status body]} (post-raw port "/commit"
+                                            (proposal "call/answer-authority" {})
+                                            "X-VOICE-CONSENT-TOKEN" "wrong")]
+        (is (= 401 status))
+        (is (= "consent-token-mismatch" (rule body)))))))
+
+(deftest an-unset-consent-token-refuses-rather-than-waving-through
+  (with-redefs [http/consent-token (constantly nil)]
+    (let [running (http/start! {:port 0})
+          port (.getPort (.getAddress ^com.sun.net.httpserver.HttpServer
+                                      (:consent running)))]
+      (try
+        (let [{:keys [status body]} (post-raw port "/commit"
+                                              (proposal "call/answer-authority" {})
+                                              "X-VOICE-CONSENT-TOKEN" "anything")]
+          (is (= 503 status))
+          (is (= "consent-surface-unconfigured" (rule body))))
+        (finally (http/stop! running))))))
+
+(deftest healthz-stays-open-because-it-is-how-you-learn-the-ceiling
+  (testing "/healthz says can-answer-calls false; a deployment should be able to learn
+            that before it has a token to ask with"
+    (with-surface
+      (fn [port]
+        (let [{:keys [status body]} (get-open! port "/healthz")]
+          (is (= 200 status))
+          (is (false? (:can-answer-calls body))))))))
+
+(deftest a-reference-read-needs-the-token
+  (with-surface
+    (fn [port]
+      (is (= 401 (:status (get-open! port "/proposals/p-1"))))
+      (is (= 200 (:status (get! port "/proposals/p-1")))))))
