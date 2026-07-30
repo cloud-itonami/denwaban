@@ -6,28 +6,45 @@
  :actor/tier      :tier-b
  :actor/integrates ["toritsugi" "yadori" "yotei"]
  :actor/domain    "denwaban.etzhayyim.com"
- :actor/purpose   "Voice receptionist — answers an inbound call (PSTN/SIP via twilio-compat, or a WebRTC soft-phone over kotoba-net), converses by voice (STT=whisper-compat, dialog=KotobaLLM, TTS=elevenlabs-compat), and BOOKS by delegating to yotei (no-double-book + member-signed). The telephone/voice counterpart of toritsugi (text/LINE window). Holds no booking state, no buyer-of-record role, no call recording without consent. Murakumo-only."
+ :actor/purpose   "Voice receptionist — answers an inbound call (PSTN/SIP via kotoba-lang/com-twilio, or a WebRTC soft-phone), converses by voice (STT=kotoba-lang/com-whisper, dialog=KotobaLLM, TTS=kotoba-lang/com-elevenlabs), and BOOKS by delegating to cloud-itonami/yotei (no-double-book + member-signed). The telephone/voice counterpart of toritsugi (text/LINE window). Holds no booking state, no buyer-of-record role, no call recording without consent. Murakumo-only."
  :actor/status    :r0
  :actor/adr       "2606271930"
 
- ;; reusable voice-session kernel lives in com-junkawasaki (shared library),
- ;; not embedded here — denwaban is the etzhayyim public-benefit instance.
+ ;; Reusable voice-session kernel lives in kotoba-lang/koe (shared library), not
+ ;; embedded here — denwaban is the public-benefit instance. Repointed 2026-07-30
+ ;; (ADR-2607300300 step 3): koe-clj moved to kotoba-lang/koe and the social
+ ;; publication membrane to kotoba-lang/social-publication. SHAs are unchanged and
+ ;; each was verified present in the new repository first.
  :actor/code-dependencies
- {com.junkawasaki/koe-clj "ceca39b877f3285f4bacbca9270190670b0d5c90"
-  com.etzhayyim/social-publication "e8127d0661284b1c12ce1b216c84b5ed2db619ab"}
+ {io.github.kotoba-lang/koe "ceca39b877f3285f4bacbca9270190670b0d5c90"
+  io.github.kotoba-lang/social-publication "e8127d0661284b1c12ce1b216c84b5ed2db619ab"}
 
  :actor/repository-contracts
- {:booking {:repository "https://github.com/etzhayyim/com-etzhayyim-yotei"
+ {:booking {:repository "https://github.com/cloud-itonami/yotei"
             :revision "bf3dac0213197a45a64ea8f566fb61700432672e"
-            :port koe.ports/IBooking}
-  :webrtc {:repository "https://github.com/kotoba-lang/net"
+            :port koe.ports/IBooking
+            ;; Was etzhayyim/com-etzhayyim-yotei, which now redirects here. NOTE:
+            ;; a separate kotoba-lang/yotei repository also exists and is NOT this
+            ;; one — it does not contain this revision. Verified before rewriting.
+            :repointed "2026-07-30"}
+  :webrtc {:repository "https://github.com/kotoba-lang/io-libp2p"
            :revision "86475deaa761f91435262b7d60861d07c68abdb8"
-           :port koe.ports/ITelephony}}
+           :port koe.ports/ITelephony
+           ;; Was kotoba-lang/net, which now redirects to io-libp2p; this revision
+           ;; does live there, so the URL rewrite is a pure rename.
+           :repointed "2026-07-30"
+           ;; OPEN QUESTION, deliberately not resolved by guessing: a repository
+           ;; now named io-libp2p supplying the WebRTC ITelephony transport of
+           ;; ADR-2606271800 is surprising, and a separate kotoba-lang/webrtc
+           ;; exists which does NOT contain this revision. Whoever takes the
+           ;; WebRTC ingress past R0 must settle which repository owns this
+           ;; binding; until then this records where the pinned code actually is.
+           :review :binding-provenance-unsettled}}
 
  :actor/unimplemented-port-bindings
- {:twilio-compat {:port koe.ports/ITelephony :state :external-contract}
-  :whisper-compat {:port koe.ports/ISTT :state :external-contract}
-  :elevenlabs-compat {:port koe.ports/ITTS :state :external-contract}}
+ {:com-twilio {:port koe.ports/ITelephony :state :external-contract}
+  :com-whisper {:port koe.ports/ISTT :state :external-contract}
+  :com-elevenlabs {:port koe.ports/ITTS :state :external-contract}}
 
  :actor/charter-rider
  {:rider/version "2.0"
@@ -45,11 +62,11 @@
 
  ;; cells = the session pipeline (telephony → listen → converse → speak → book)
  :actor/cells
- [{:cell/id "ingress"  :cell/kind :coded     :cell/runtime :kotoba :cell/doc "twilio-compat Programmable Voice / SIP / WebRTC soft-phone ingress (G7-gated)"}
-  {:cell/id "listen"   :cell/kind :coded     :cell/runtime :wasm   :cell/doc "STT via whisper-compat; streaming partials for barge-in"}
+ [{:cell/id "ingress"  :cell/kind :coded     :cell/runtime :kotoba :cell/doc "kotoba-lang/com-twilio Programmable Voice / SIP / WebRTC soft-phone ingress (G7-gated)"}
+  {:cell/id "listen"   :cell/kind :coded     :cell/runtime :wasm   :cell/doc "STT via kotoba-lang/com-whisper; streaming partials for barge-in"}
   {:cell/id "converse" :cell/kind :langgraph :cell/runtime :wasm   :cell/doc "KotobaLLM dialog loop; intent + slot extraction (G4)"}
-  {:cell/id "speak"    :cell/kind :coded     :cell/runtime :wasm   :cell/doc "TTS via elevenlabs-compat; emits voice back over the ingress channel"}
-  {:cell/id "book"     :cell/kind :coded     :cell/runtime :kotoba :cell/doc "delegate to yotei BookSlot/SetAvailability via MCP; no local booking state (G2)"}]
+  {:cell/id "speak"    :cell/kind :coded     :cell/runtime :wasm   :cell/doc "TTS via kotoba-lang/com-elevenlabs; emits voice back over the ingress channel"}
+  {:cell/id "book"     :cell/kind :coded     :cell/runtime :kotoba :cell/doc "delegate to cloud-itonami/yotei BookSlot/SetAvailability via MCP; no local booking state (G2)"}]
 
  :actor/lexicons
  ["com.etzhayyim.denwaban.session"
@@ -66,6 +83,6 @@
   :social-state-machine "src/denwaban/cells/social_post/state_machine.cljc"}
 
  :actor/tests
- {:runner "babashka" :cmd "bb test"
+ {:runner "clojure" :cmd "clojure -M:test"
   :verification {:tests 6 :assertions 16 :failures 0 :errors 0}
   :suites ["denwaban.test-session" "denwaban.test-social"]}}

@@ -1,8 +1,20 @@
 {:paths ["src"]
- :deps {com.junkawasaki/koe-clj
-        {:git/url "https://github.com/com-junkawasaki/koe-clj.git"
+ ;; Both dependencies were repointed 2026-07-30 (ADR-2607300300 step 3). The old
+ ;; coordinates named repositories that have since moved:
+ ;;   com-junkawasaki/koe-clj                     -> kotoba-lang/koe
+ ;;   etzhayyim/com-etzhayyim-social-publication  -> kotoba-lang/social-publication
+ ;; GitHub still redirects the old URLs, which is exactly why the drift went
+ ;; unnoticed. The pinned SHAs are UNCHANGED and were each verified to exist in
+ ;; the new repository before the URL was rewritten. social-publication's
+ ;; namespace is still etzhayyim.social.publication (verified at this SHA and at
+ ;; its HEAD), so denwaban.social's :require is deliberately untouched -- a
+ ;; repository rename is not a namespace rename.
+ :deps {io.github.kotoba-lang/koe
+        {:git/url "https://github.com/kotoba-lang/koe.git"
          :git/sha "ceca39b877f3285f4bacbca9270190670b0d5c90"}
-        com.etzhayyim/social-publication
-        {:git/url "https://github.com/etzhayyim/com-etzhayyim-social-publication.git"
+        io.github.kotoba-lang/social-publication
+        {:git/url "https://github.com/kotoba-lang/social-publication.git"
          :git/sha "e8127d0661284b1c12ce1b216c84b5ed2db619ab"}}
- :aliases {:test {:extra-paths ["test"]}}}
+ :aliases
+ {:test {:extra-paths ["test"]
+         :main-opts ["-i" "run_tests.clj"]}}}

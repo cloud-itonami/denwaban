@@ -6,9 +6,9 @@
   (testing "the five stages bind the already-existing actors (no duplicate impl)"
     (let [plan (s/plan-session {})
           by-stage (into {} (map (juxt :stage :actor) (:stages plan)))]
-      (is (= "twilio-compat"     (:ingress  by-stage)))
-      (is (= "whisper-compat"    (:listen   by-stage)))
-      (is (= "elevenlabs-compat" (:speak    by-stage)))
+      (is (= "com-twilio"     (:ingress  by-stage)))
+      (is (= "com-whisper"    (:listen   by-stage)))
+      (is (= "com-elevenlabs" (:speak    by-stage)))
       (is (= "yotei"             (:book     by-stage)))
       (is (= 'koe.session/converse (get-in plan [:kernel :session])))
       (is (= 'koe.ports/IBooking (get-in plan [:kernel :ports :book]))))))
@@ -24,7 +24,7 @@
   (testing "a WebRTC soft-phone swaps only the ingress transport (ADR-2606271800)"
     (let [plan (s/plan-session {:reach :webrtc})
           ingress (first (:stages plan))]
-      (is (= "kotoba-net/webrtc" (:actor ingress)))
+      (is (= "webrtc" (:actor ingress)))
       (is (= :webrtc (:reach plan))))))
 
 (deftest recording-transient-by-default
