@@ -5,8 +5,11 @@
 
 予約は自分で持たず **`yotei` に委譲**する（no-double-book + member 署名確定は yotei が保証）。
 音声 I/O は **`kotoba-lang/com-whisper`（STT）+ `kotoba-lang/com-elevenlabs`（TTS）**、
-電話面は **`kotoba-lang/com-twilio`**、Web 着信は **WebRTC**（ADR-2606271800）。
+電話面は provider-neutral な **`koe.ports/ITelephony`**（Twilio / Telnyx / Vonage /
+managed contact-center adapter）、Web 着信は **WebRTC**（ADR-2606271800）。Starlink と
+eSIM は交換可能な IP access path であり、電話番号/PSTN provider とは分離する。
 再利用カーネルは **`kotoba-lang/koe`**（共通ライブラリ）にあり、本 actor はその公益インスタンス。
+比較と fail-closed admission は [telephony provider architecture](docs/telephony-provider-architecture.md)。
 
 > 参照名は 2026-07-30 に実在する repo へ揃えた（ADR-2607300300 step 3）。旧 `*-compat` は
 > `kotoba-lang/com-*` へ、`koe-clj` は `kotoba-lang/koe` へ、booking の委譲先は
@@ -16,7 +19,7 @@
 設計確定: **ADR-2606271930**。詳細は `CLAUDE.md`。
 
 ```
-clojure -M:test    # pipeline 合成 + G2 booking 委譲 + G7 gate + social_post 膜の拒否経路 + HTTP 面（34 tests / 101 assertions）
+clojure -M:test    # provider/access 分離 + pipeline 合成 + G2/G7 + HTTP 面（38 tests / 111 assertions）
 clojure -M:serve   # consent surface（loopback :1343）
 ```
 
