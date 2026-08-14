@@ -3,12 +3,14 @@
 
   Binds the voice-receptionist pipeline: ingress → listen → converse → speak → book.
   The reusable kernel + port protocols live in `kotoba-lang/koe`; this cell is the
-  public-benefit instance that injects the concrete actors (`kotoba-lang/com-twilio`
-  / `com-whisper` / `com-elevenlabs`, and `cloud-itonami/yotei`) into those ports.
+  public-benefit instance that injects an admitted telephony provider plus the
+  concrete STT/TTS/booking actors (`com-whisper` / `com-elevenlabs`, and
+  `cloud-itonami/yotei`) into those ports.
 
   R0: no socket, no live call, no model. `plan-session` is a PURE description of the
   pipeline (testable offline); `run-session` raises (G7 outward-gate). ADR-2606271930."
-  (:require [koe.ports :as ports]
+  (:require [denwaban.transport :as transport]
+            [koe.ports :as ports]
             [koe.session :as koe-session]))
 
 (def kernel-contract
@@ -30,7 +32,7 @@
 ;; that actually exist: the `*-compat` clean-room actors moved to kotoba-lang under a
 ;; `com-` prefix, so `twilio-compat` is `kotoba-lang/com-twilio` and so on.
 (def pipeline
-  [{:stage :ingress  :port :ITelephony :actor "com-twilio"     :gate "G7"}
+  [{:stage :ingress  :port :ITelephony :actor "telephony-provider" :gate "G7"}
    {:stage :listen   :port :ISTT       :actor "com-whisper"    :gate "G1"}
    {:stage :converse :port :IDialog    :actor "kotoba-llm"     :gate "G4"}
    {:stage :speak    :port :ITTS       :actor "com-elevenlabs" :gate "G1"}
@@ -40,8 +42,9 @@
   "Pure: return the ordered pipeline for a session intent. No I/O. Used by the
   contract test to assert the composition (and that booking is delegated to yotei,
   never confirmed locally — G2)."
-  [{:keys [reach] :or {reach :pstn}}]
+  [{:keys [reach transport-plan] :or {reach :pstn}}]
   {:reach reach
+   :transport transport-plan
    :kernel kernel-contract
    :stages (cond-> pipeline
              ;; a WebRTC soft-phone swaps the ingress transport (ADR-2606271800),
@@ -56,7 +59,10 @@
              ;; actor's manifest pins). See manifest.edn :webrtc for the open
              ;; question; naming the transport keeps this data honest meanwhile.
              (= reach :webrtc)
-             (assoc-in [0 :actor] "webrtc"))
+             (assoc-in [0 :actor] "webrtc")
+
+             (and (= reach :pstn) transport-plan)
+             (assoc-in [0 :actor] (transport/ingress-actor transport-plan)))
    :booking-owner "yotei"          ; never "denwaban" — single source of truth (G2)
    :recording :transient})         ; G1: no retention without explicit consent
 

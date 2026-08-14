@@ -6,7 +6,7 @@
  :actor/tier      :tier-b
  :actor/integrates ["toritsugi" "yadori" "yotei"]
  :actor/domain    "denwaban.etzhayyim.com"
- :actor/purpose   "Voice receptionist — answers an inbound call (PSTN/SIP via kotoba-lang/com-twilio, or a WebRTC soft-phone), converses by voice (STT=kotoba-lang/com-whisper, dialog=KotobaLLM, TTS=kotoba-lang/com-elevenlabs), and BOOKS by delegating to cloud-itonami/yotei (no-double-book + member-signed). The telephone/voice counterpart of toritsugi (text/LINE window). Holds no booking state, no buyer-of-record role, no call recording without consent. Murakumo-only."
+ :actor/purpose   "Voice receptionist — answers an inbound call through an admitted provider-neutral PSTN/SIP ITelephony adapter, or a WebRTC soft-phone; converses by voice (STT=kotoba-lang/com-whisper, dialog=KotobaLLM, TTS=kotoba-lang/com-elevenlabs); and BOOKS by delegating to cloud-itonami/yotei (no-double-book + member-signed). IP access (terrestrial, cellular eSIM, Starlink) is selected independently and never treated as a telephone provider. The telephone/voice counterpart of toritsugi (text/LINE window). Holds no booking state, no buyer-of-record role, no call recording without consent. Murakumo-only."
  :actor/status    :r0
  :actor/adr       "2606271930"
 
@@ -42,7 +42,10 @@
            :review :binding-provenance-unsettled}}
 
  :actor/unimplemented-port-bindings
- {:com-twilio {:port koe.ports/ITelephony :state :external-contract}
+ {:telephony-provider {:port koe.ports/ITelephony :state :external-contract
+                       :adapters [:twilio :telnyx :vonage :amazon-connect]
+                       :access-paths [:terrestrial :cellular-esim :starlink]
+                       :failover :new-call-only}
   :com-whisper {:port koe.ports/ISTT :state :external-contract}
   :com-elevenlabs {:port koe.ports/ITTS :state :external-contract}}
 
@@ -62,7 +65,7 @@
 
  ;; cells = the session pipeline (telephony → listen → converse → speak → book)
  :actor/cells
- [{:cell/id "ingress"  :cell/kind :coded     :cell/runtime :kotoba :cell/doc "kotoba-lang/com-twilio Programmable Voice / SIP / WebRTC soft-phone ingress (G7-gated)"}
+ [{:cell/id "ingress"  :cell/kind :coded     :cell/runtime :kotoba :cell/doc "provider-neutral PSTN/SIP ITelephony adapter or WebRTC soft-phone; IP access selected independently (G7-gated)"}
   {:cell/id "listen"   :cell/kind :coded     :cell/runtime :wasm   :cell/doc "STT via kotoba-lang/com-whisper; streaming partials for barge-in"}
   {:cell/id "converse" :cell/kind :langgraph :cell/runtime :wasm   :cell/doc "KotobaLLM dialog loop; intent + slot extraction (G4)"}
   {:cell/id "speak"    :cell/kind :coded     :cell/runtime :wasm   :cell/doc "TTS via kotoba-lang/com-elevenlabs; emits voice back over the ingress channel"}
@@ -84,5 +87,7 @@
 
  :actor/tests
  {:runner "clojure" :cmd "clojure -M:test"
-  :verification {:tests 6 :assertions 16 :failures 0 :errors 0}
-  :suites ["denwaban.test-session" "denwaban.test-social"]}}
+  :verification {:tests 38 :assertions 111 :failures 0 :errors 0}
+  :suites ["denwaban.test-session" "denwaban.test-transport"
+           "denwaban.test-social" "denwaban.test-state-machine"
+           "denwaban.test-http"]}}

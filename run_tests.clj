@@ -1,6 +1,6 @@
 (require '[clojure.test :as t])
 
-(def suites '[denwaban.test-session denwaban.test-social denwaban.test-state-machine
+(def suites '[denwaban.test-session denwaban.test-transport denwaban.test-social denwaban.test-state-machine
               denwaban.test-http])
 (apply require suites)
 (let [{:keys [fail error] :as result} (apply t/run-tests suites)]

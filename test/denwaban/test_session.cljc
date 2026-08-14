@@ -3,15 +3,23 @@
             [denwaban.session :as s]))
 
 (deftest pipeline-composes-existing-actors
-  (testing "the five stages bind the already-existing actors (no duplicate impl)"
+  (testing "the five stages bind ports without hard-coding a PSTN vendor"
     (let [plan (s/plan-session {})
           by-stage (into {} (map (juxt :stage :actor) (:stages plan)))]
-      (is (= "com-twilio"     (:ingress  by-stage)))
+      (is (= "telephony-provider" (:ingress by-stage)))
       (is (= "com-whisper"    (:listen   by-stage)))
       (is (= "com-elevenlabs" (:speak    by-stage)))
       (is (= "yotei"             (:book     by-stage)))
       (is (= 'koe.session/converse (get-in plan [:kernel :session])))
       (is (= 'koe.ports/IBooking (get-in plan [:kernel :ports :book]))))))
+
+(deftest admitted-provider-is-visible-without-becoming-the-kernel
+  (let [plan (s/plan-session
+              {:transport-plan {:status :ready
+                                :telephony-provider :telnyx
+                                :access-path :starlink}})]
+    (is (= "telephony/telnyx" (-> plan :stages first :actor)))
+    (is (= :starlink (get-in plan [:transport :access-path])))))
 
 (deftest booking-is-delegated-to-yotei
   (testing "G2: denwaban never owns the booking — yotei is the source of truth"
