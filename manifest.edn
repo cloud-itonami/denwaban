@@ -21,6 +21,7 @@
   :telephony    :g7-gated       ; opening a channel: Council Lv6+ + named operator + flag
   :arrival      :implemented    ; denwaban.arrival — forwarded calls, caller-ID provenance
   :webhook-auth :implemented    ; denwaban.carrier — Twilio HMAC-SHA1, known-answer tested
+  :extraction   :implemented    ; denwaban.kikitori — deterministic; the model is the FALLBACK
   :tts          :available-unwired ; macOS `say` on every fleet node, ulaw@8000 (measured 2026-08-15)
   :stt          :absent         ; com-whisper is a clean-room stub; infer.murakumo.cloud is completion-only
   :media-bridge :not-implemented
@@ -83,6 +84,7 @@
   {:gate/id "G7" :gate/name "outward-gated"        :gate/rule "live inbound/outbound telephony is R0=offline + intent only; live = Council Lv6+ + operator gate + explicit env flag"}
   {:gate/id "G8" :gate/name "sourcing-honesty"     :gate/rule "transcripts/bookings use representative fixtures with provenance; no fabricated call data"}
   {:gate/id "G9" :gate/name "consent-attested-not-signed" :gate/rule "a telephone caller has no DID, so their consent is ATTESTED (denwaban.consent) and stamped consentKind on the 予約; it must never be presentable as yotei's member DID-signed consent (G8 there). Attestation carries that consent was given, when, and to which sentence -- never the recording (G1)"}
+  {:gate/id "G14" :gate/name "extraction-refuses-rather-than-guesses" :gate/rule "denwaban.kikitori returns nil for any field it cannot read cleanly, and the dialog then ASKS. An absent field costs one more question; a wrong one is a party of six at a two-top or a table held on the wrong evening, discovered on arrival. Party size needs a counter word (a bare 4 is 4番テーブル or 4月), a time with no day is not resolved to today, and 「お願いします」 alone is not consent -- it is how the call opens (2026-08-15)"}
   {:gate/id "G13" :gate/name "unverified-webhook-says-nothing" :gate/rule "an inbound webhook whose signature does not verify is answered with <Hangup/> and no spoken message -- the party at the other end is unknown, so anything said is said to them. A provider whose scheme is not implemented is REFUSED, never admitted unchecked, and the implemented set is DERIVED from the verifier table so it cannot claim more than it can do. The answer document is <Connect><Stream>, never <Start>: Start forks a copy and leaves the call up, which is a listening device (2026-08-15)"}
   {:gate/id "G11" :gate/name "caller-id-has-provenance" :gate/rule "a presented number becomes the caller's contact ONLY when its provenance says so (denwaban.arrival). On a forwarded call -- the first deployment shape -- the presented number may be the SHOP's own line; a number equal to the forwarding line is never the caller whatever the carrier labelled it. A wrong contact is worse than a missing one: it is never asked about, and the 予約 looks well formed while holding a table for someone nobody can reach (2026-08-15)"}
   {:gate/id "G12" :gate/name "consent-in-the-callers-language" :gate/rule "the consent sentence is per locale and the attestation records WHICH sentence was said (consentLocale). A locale with no sentence REFUSES rather than falling back -- attesting that a caller agreed to a sentence never said to them, in a language they may not speak, is an attestation of something that did not happen (2026-08-15)"}
@@ -113,12 +115,13 @@
   :consent "src/denwaban/consent.cljc"
   :arrival "src/denwaban/arrival.cljc"
   :carrier "src/denwaban/carrier.cljc"
+  :kikitori "src/denwaban/kikitori.cljc"
   :carrier-runbook "docs/carrier-connection.md"
   :social-state-machine "src/denwaban/cells/social_post/state_machine.cljc"}
 
  :actor/tests
  {:runner "clojure" :cmd "clojure -M:test"
-  :verification {:tests 79 :assertions 218 :failures 0 :errors 0}
+  :verification {:tests 95 :assertions 284 :failures 0 :errors 0}
   :suites ["denwaban.test-session" "denwaban.test-transport"
            "denwaban.test-social" "denwaban.test-state-machine"
            "denwaban.test-http" "denwaban.test-uketsuke"]
