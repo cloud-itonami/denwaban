@@ -23,6 +23,7 @@
   :webhook-auth :implemented    ; denwaban.carrier — Twilio HMAC-SHA1, known-answer tested
   :extraction   :implemented    ; denwaban.kikitori — deterministic; the model is the FALLBACK
   :tts          :available-unwired ; macOS `say` on every fleet node, ulaw@8000 (measured 2026-08-15)
+  :serifu       :implemented    ; denwaban.serifu — the closed question set pre-rendered; 0.02s vs 0.65-1.14s
   :stt          :absent         ; com-whisper is a clean-room stub; infer.murakumo.cloud is completion-only
   :media-bridge :not-implemented
   :locales      #{:ja :en}}     ; dialog + consent sentence; a locale with no sentence refuses
@@ -116,12 +117,14 @@
   :arrival "src/denwaban/arrival.cljc"
   :carrier "src/denwaban/carrier.cljc"
   :kikitori "src/denwaban/kikitori.cljc"
+  :serifu "src/denwaban/serifu.cljc"
+  :latency "docs/latency.md"
   :carrier-runbook "docs/carrier-connection.md"
   :social-state-machine "src/denwaban/cells/social_post/state_machine.cljc"}
 
  :actor/tests
  {:runner "clojure" :cmd "clojure -M:test"
-  :verification {:tests 95 :assertions 284 :failures 0 :errors 0}
+  :verification {:tests 105 :assertions 344 :failures 0 :errors 0}
   :suites ["denwaban.test-session" "denwaban.test-transport"
            "denwaban.test-social" "denwaban.test-state-machine"
            "denwaban.test-http" "denwaban.test-uketsuke"]
