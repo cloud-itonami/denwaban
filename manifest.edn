@@ -10,6 +10,18 @@
  :actor/status    :r0
  :actor/adr       "2606271930"
 
+ ;; A single :actor/status word was hiding a real change, in both directions:
+ ;; "R0 scaffold" now understates what runs, and anything above it would claim a
+ ;; telephone this actor still cannot answer. Reach is recorded per capability
+ ;; instead, so neither half can be read off the other (ADR-2608150900).
+ :actor/reach
+ {:conversation :implemented    ; denwaban.uketsuke — slot-filling, refusals, escalation
+  :booking      :implemented    ; denwaban.yoyaku -> yotei.seat + yotei.delegation, confirmed 予約
+  :consent      :implemented    ; denwaban.consent — attested, stamped, never signed
+  :stt          :external-contract
+  :tts          :external-contract
+  :telephony    :g7-gated}      ; opening a channel: Council Lv6+ + named operator + flag
+
  ;; Reusable voice-session kernel lives in kotoba-lang/koe (shared library), not
  ;; embedded here — denwaban is the public-benefit instance. Repointed 2026-07-30
  ;; (ADR-2607300300 step 3): koe-clj moved to kotoba-lang/koe and the social
@@ -17,7 +29,11 @@
  ;; each was verified present in the new repository first.
  :actor/code-dependencies
  {io.github.kotoba-lang/koe "ceca39b877f3285f4bacbca9270190670b0d5c90"
-  io.github.kotoba-lang/social-publication "e8127d0661284b1c12ce1b216c84b5ed2db619ab"}
+  io.github.kotoba-lang/social-publication "e8127d0661284b1c12ce1b216c84b5ed2db619ab"
+  ;; yotei is a code dependency as of 2026-08-15, not only a contract. Before
+  ;; this the repository named yotei in :actor/repository-contracts and called
+  ;; none of it, which is why "book" was a stage label rather than a booking.
+  io.github.cloud-itonami/yotei "03f12d9726d6b049170aac7eeeb08235229358b5"}
 
  :actor/repository-contracts
  {:booking {:repository "https://github.com/cloud-itonami/yotei"
@@ -55,13 +71,15 @@
 
  :actor/gates
  [{:gate/id "G1" :gate/name "consent-first"        :gate/rule "no secret recording; call recording/transcript retention requires explicit up-front consent; transient by default"}
-  {:gate/id "G2" :gate/name "member-signed-booking":gate/rule "every booking is confirmed through yotei's member-signed confirm (G5/G8 of yotei); denwaban never confirms server-side"}
+  {:gate/id "G2" :gate/name "member-signed-booking":gate/rule "every booking is confirmed through yotei, never here. 2026-08-15 (ADR-2608150900): the telephone path uses yotei's DELEGATED door — a delegate-origin signature plus a true admission from yotei.delegation, which re-derives the whole 予約 against an envelope the owner signed in advance. denwaban still confirms nothing itself: it signs and asks. The distinction that must survive is that an unattended confirm is bounded by the owner's own sentence and stamped confirmedVia=delegate, so it can never be read as a member sitting down and agreeing to this particular 予約"}
   {:gate/id "G3" :gate/name "no-booker-harvest"    :gate/rule "no caller profiling / resale / CRM funnel; phone handles minimal, encrypted, used only to hold the slot (inherits yotei G2)"}
   {:gate/id "G4" :gate/name "murakumo-only"        :gate/rule "STT/dialog/TTS run in Murakumo; KotobaLLM 127.0.0.1:4000; no passthrough to external SaaS"}
   {:gate/id "G5" :gate/name "no-server-key"        :gate/rule "telephony/registrar creds member-held; WebRTC TURN via kotoba-turn short-lived credential (ADR-2606271800); no server key emitted"}
   {:gate/id "G6" :gate/name "no-robocall"          :gate/rule "no untargeted outbound dialing / autodialer / caller-ID spoofing; outbound limited to consented callbacks"}
   {:gate/id "G7" :gate/name "outward-gated"        :gate/rule "live inbound/outbound telephony is R0=offline + intent only; live = Council Lv6+ + operator gate + explicit env flag"}
-  {:gate/id "G8" :gate/name "sourcing-honesty"     :gate/rule "transcripts/bookings use representative fixtures with provenance; no fabricated call data"}]
+  {:gate/id "G8" :gate/name "sourcing-honesty"     :gate/rule "transcripts/bookings use representative fixtures with provenance; no fabricated call data"}
+  {:gate/id "G9" :gate/name "consent-attested-not-signed" :gate/rule "a telephone caller has no DID, so their consent is ATTESTED (denwaban.consent) and stamped consentKind on the 予約; it must never be presentable as yotei's member DID-signed consent (G8 there). Attestation carries that consent was given, when, and to which sentence -- never the recording (G1)"}
+  {:gate/id "G10" :gate/name "unconfirmable-means-callback" :gate/rule "if the owner-signed envelope is expired, or either signature cannot be verified, the call ends with a human callback and the caller is told. Collecting further details is refused -- personal data taken for an act that cannot happen"}]
 
  ;; cells = the session pipeline (telephony → listen → converse → speak → book)
  :actor/cells
@@ -69,7 +87,7 @@
   {:cell/id "listen"   :cell/kind :coded     :cell/runtime :wasm   :cell/doc "STT via kotoba-lang/com-whisper; streaming partials for barge-in"}
   {:cell/id "converse" :cell/kind :langgraph :cell/runtime :wasm   :cell/doc "KotobaLLM dialog loop; intent + slot extraction (G4)"}
   {:cell/id "speak"    :cell/kind :coded     :cell/runtime :wasm   :cell/doc "TTS via kotoba-lang/com-elevenlabs; emits voice back over the ingress channel"}
-  {:cell/id "book"     :cell/kind :coded     :cell/runtime :kotoba :cell/doc "delegate to cloud-itonami/yotei BookSlot/SetAvailability via MCP; no local booking state (G2)"}]
+  {:cell/id "book"     :cell/kind :coded     :cell/runtime :kotoba :cell/doc "denwaban.yoyaku -> yotei.seat (which table) + yotei.delegation (owner-signed envelope, re-derived) + yotei.yoyaku (no-double-book); no local booking state (G2)"}]
 
  :actor/lexicons
  ["com.etzhayyim.denwaban.session"
@@ -83,11 +101,20 @@
  :actor/resources
  {:manifest "manifest.edn"
   :session "src/denwaban/session.cljc"
+  :uketsuke "src/denwaban/uketsuke.cljc"
+  :yoyaku "src/denwaban/yoyaku.cljc"
+  :consent "src/denwaban/consent.cljc"
   :social-state-machine "src/denwaban/cells/social_post/state_machine.cljc"}
 
  :actor/tests
  {:runner "clojure" :cmd "clojure -M:test"
-  :verification {:tests 38 :assertions 111 :failures 0 :errors 0}
+  :verification {:tests 56 :assertions 158 :failures 0 :errors 0}
   :suites ["denwaban.test-session" "denwaban.test-transport"
            "denwaban.test-social" "denwaban.test-state-machine"
-           "denwaban.test-http"]}}
+           "denwaban.test-http" "denwaban.test-uketsuke"]
+  ;; Verified by mutation rather than asserted: breaking the seating time in
+  ;; propose, and fabricating a confirmation instead of delegating, each fail
+  ;; the end-to-end call test. Both consent gates were ALSO measured -- and
+  ;; separately, because with both in place either one could be removed and the
+  ;; suite still passed. They now have a test each.
+  :discriminates true}}
