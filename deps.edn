@@ -11,7 +11,7 @@
  ;; repository rename is not a namespace rename.
  :deps {io.github.kotoba-lang/koe
         {:git/url "https://github.com/kotoba-lang/koe.git"
-         :git/sha "ceca39b877f3285f4bacbca9270190670b0d5c90"}
+         :git/sha "1ebb0acd0183f7fb16807282e545b6a1e13fe59d"}
         io.github.kotoba-lang/social-publication
         {:git/url "https://github.com/kotoba-lang/social-publication.git"
          :git/sha "e8127d0661284b1c12ce1b216c84b5ed2db619ab"}
@@ -28,7 +28,13 @@
 
         ;; The HTTP surface's JSON codec. com.sun.net.httpserver is JDK-provided, so
         ;; the surface adds no server dependency -- only this.
-        org.clojure/data.json {:mvn/version "2.5.1"}}
+        org.clojure/data.json {:mvn/version "2.5.1"}
+
+        ;; http-kit — the WebSocket server and client the media stream needs.
+        ;; One small jar, no transitive dependencies. It is here and not in
+        ;; kotoba-lang/koe on purpose: koe holds the decisions and stays free of
+        ;; every SDK, and this actor is where a socket is actually opened.
+        http-kit/http-kit {:mvn/version "2.8.0"}}
  :aliases
  {:test {:extra-paths ["test"]
          :main-opts ["-i" "run_tests.clj"]}
@@ -39,4 +45,7 @@
   ;; -> render the closed set of receptionist lines to ulaw@8000 files. Build
   ;;    time, never call time: synthesis costs 0.65-1.14s and reading a rendered
   ;;    file costs 0.02s (measured 2026-08-15).
-  :serifu {:main-opts ["-m" "denwaban.render-serifu"]}}}
+  :serifu {:main-opts ["-m" "denwaban.render-serifu"]}
+  ;; clojure -M:media [port] -> the live-call sockets (POST /voice, WS /media).
+  ;; Needs a speech engine at :engine-url and rendered lines in :serifu-dir.
+  :media {:main-opts ["-m" "denwaban.ws"]}}}

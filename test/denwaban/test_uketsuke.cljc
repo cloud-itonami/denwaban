@@ -12,7 +12,7 @@
   should and also books when it should not is worse than one that never books."
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
-            [denwaban.arrival :as arrival]
+            [koe.arrival :as arrival]
             [denwaban.consent :as consent]
             [denwaban.session :as session]
             [denwaban.uketsuke :as uketsuke]
@@ -214,7 +214,7 @@
     (testing "the shop's own line arriving as caller ID is the diversion showing through"
       (is (nil? (get-in state [:denwaban/facts :contact])))
       (is (= :presented-number-is-the-forwarding-line
-             (:denwaban/contact-unavailable state))))))
+             (:koe/contact-unavailable state))))))
 
 (deftest test-a-forwarded-call-without-the-original-asks-for-the-number
   (let [{:keys [replies state]}
@@ -228,12 +228,12 @@
 
 (deftest test-an-unrecognised-provenance-is-unusable-not-usable
   (testing "a provenance nobody has thought about yet must not become a fact"
-    (is (nil? (:denwaban/contact
+    (is (nil? (:koe/contact
                (arrival/caller-contact {:presented-number CALLER
                                         :provenance :some-new-carrier-header}))))
-    (is (nil? (:denwaban/contact
+    (is (nil? (:koe/contact
                (arrival/caller-contact {:presented-number CALLER :provenance nil}))))
-    (is (= CALLER (:denwaban/contact
+    (is (= CALLER (:koe/contact
                    (arrival/caller-contact {:presented-number CALLER
                                             :provenance :network-caller}))))))
 
@@ -245,8 +245,8 @@
                         "090-1111-2222です" "はい"])]
     (is (= "confirmed" (get booking "state")))
     (testing "and the 予約 is legible afterwards as one taken through a diversion"
-      (is (= :forwarded (get-in state [:denwaban/arrival :denwaban/via])))
-      (is (= :asked (get-in state [:denwaban/arrival :denwaban/contact-source]))))))
+      (is (= :forwarded (get-in state [:denwaban/arrival :koe/via])))
+      (is (= :asked (get-in state [:denwaban/arrival :koe/contact-source]))))))
 
 ;; ── speaking the caller's language ───────────────────────────────────────────
 
