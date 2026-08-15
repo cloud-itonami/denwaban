@@ -24,7 +24,7 @@
         ;; and not a second copy of them living here.
         io.github.cloud-itonami/yotei
         {:git/url "https://github.com/cloud-itonami/yotei.git"
-         :git/sha "03f12d9726d6b049170aac7eeeb08235229358b5"}
+         :git/sha "e85ae8912be6cfb759e613db3241fb30672c290d"}
 
         ;; The HTTP surface's JSON codec. com.sun.net.httpserver is JDK-provided, so
         ;; the surface adds no server dependency -- only this.

@@ -21,12 +21,25 @@
 
 (def kind "telephone-attested")
 
-(def statement
+(def statements
   "The sentence that must actually be said out loud before contact details are
-  taken. It is a constant so that the thing attested to and the thing asked are
-  the same thing; a caller-specific paraphrase would make the attestation refer
-  to a sentence nobody kept."
-  "ご予約のため、お名前とお電話番号をお預かりします。よろしいでしょうか。")
+  taken, per locale. Constants, so that the thing attested to and the thing asked
+  are the same thing; a caller-specific paraphrase would make the attestation
+  refer to a sentence nobody kept.
+
+  Going global makes the locale part of the attestation rather than a
+  presentation detail: a consent given to a sentence the caller does not speak is
+  not a consent, so the attestation records WHICH sentence was said, and a locale
+  with no sentence here is refused rather than served the default one."
+  {:ja "ご予約のため、お名前とお電話番号をお預かりします。よろしいでしょうか。"
+   :en "To hold the table I'll take your name and phone number. Is that all right?"})
+
+(def default-locale :ja)
+
+(defn statement
+  "The consent sentence for a locale, or nil if this locale has none."
+  ([] (statement default-locale))
+  ([locale] (get statements locale)))
 
 (defn attest
   "Mint the consent reference for one call, or refuse.
@@ -34,7 +47,8 @@
   Refuses unless consent was **granted** — literal `true`, so a nil 'we never
   asked' cannot arrive here as a yes. Refuses without a call reference, because
   an attestation nobody can trace back to a call is an assertion, not evidence."
-  [{:keys [call-ref granted? spoken-at-epoch-min]}]
+  [{:keys [call-ref granted? spoken-at-epoch-min locale]
+    :or {locale default-locale}}]
   (cond
     (not (true? granted?))
     {:denwaban/refused :consent-not-granted}
@@ -45,7 +59,14 @@
     (not (integer? spoken-at-epoch-min))
     {:denwaban/refused :no-time-of-consent}
 
+    (nil? (statement locale))
+    ;; Refusing is the point. Falling back to another language would attest that
+    ;; a caller agreed to a sentence that was never said to them, in a language
+    ;; they may not speak -- an attestation of something that did not happen.
+    {:denwaban/refused :no-consent-sentence-for-locale :denwaban/locale locale}
+
     :else
     {:denwaban/consent-ref (str kind ":" call-ref ":" spoken-at-epoch-min)
      :denwaban/consent-kind kind
-     :denwaban/statement statement}))
+     :denwaban/consent-locale locale
+     :denwaban/statement (statement locale)}))

@@ -33,6 +33,8 @@ clojure -M:serve   # consent surface（loopback :1343）
 | 会話（`denwaban.uketsuke`） | ✅ 人数 → 日時 → 名前 → 同意 の slot-filling、満席・時間外・大人数の断り分け、折り返しへのエスカレーション |
 | 予約（`denwaban.yoyaku`） | ✅ `yotei.seat` が卓を選び、`yotei.delegation` が店主署名の封筒で認可し、`yotei.yoyaku` が二重予約を拒否する。**確定した 予約 が実際に出る** |
 | 同意（`denwaban.consent`） | ✅ 電話の相手に DID は無いので **attested**（署名ではない）。`consentKind` を 予約 に刻む |
+| 着信の出自（`denwaban.arrival`） | ✅ **転送で入った通話**の発信者番号を出自付きで扱う。店の番号が発信者番号として届いたら事実にせず、通常どおり訊く |
+| 言語 | ✅ `:ja` `:en`。**同意文が無い locale は確定しない**（言われていない文への同意を記録しないため） |
 | STT / TTS | ⬜ external contract（`com-whisper` / `com-elevenlabs`） |
 | **電話に出る** | 🔒 **G7**（Council Lv6+ + named operator + 明示フラグ + admitted carrier） |
 
@@ -42,7 +44,7 @@ clojure -M:serve   # consent surface（loopback :1343）
 `run-session`（チャネルを**開く**方）だけが G7 を見る。公衆に届くのは「開ける」行為で、
 残りはテストでも operator のソフトフォンでも実回線でも同じ算術だからである。
 
-`clojure -M:test` → 56 tests / 158 assertions。end-to-end は fixture port
+`clojure -M:test` → 65 tests / 182 assertions。end-to-end は fixture port
 （carrier も model も WebCrypto も無し）だが、**経路上の判断は全部 production のもの**。
 
 **2026-07-30 に付いた HTTP 面（`denwaban.http`）は consent surface のまま**で、

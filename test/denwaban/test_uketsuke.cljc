@@ -12,6 +12,7 @@
   should and also books when it should not is worse than one that never books."
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
+            [denwaban.arrival :as arrival]
             [denwaban.consent :as consent]
             [denwaban.session :as session]
             [denwaban.uketsuke :as uketsuke]
@@ -36,7 +37,7 @@
            :yotei/seating-min 90
            :yotei/notice-min 60
            :yotei/horizon-days 30
-           :yotei/tz-offset-min 540
+           :yotei/tz "Asia/Tokyo"
            :yotei/tables [[(seat/table-did REST "t2") 2]
                           [(seat/table-did REST "t4") 4]
                           [(seat/table-did REST "t6") 6]]
@@ -54,6 +55,7 @@
    "2人です"                    {:party-size 2}
    "20日の19時でお願いします"     {:start-epoch-min t19}
    "川崎です"                    {:name "川崎"}
+   "090-1111-2222です"           {:contact "+819011112222"}
    "はい"                       {:consent? true}
    "いいえ"                     {:consent? false}})
 
@@ -72,6 +74,7 @@
               :now-fn (constantly now)
               :verify-owner (constantly true)
               :verify-delegate (constantly true)
+              :offset-at (constantly 540)
               :seal-contact (when sealed?
                               (fn [{:keys [name contact]}]
                                 (str "sealed:" (hash [name contact]))))}]
@@ -93,7 +96,8 @@
   (let [{:keys [ports store]} (ports* opts)]
     (assoc (session/run-call ports
                              (uketsuke/initial-state {:call-ref "call-1"
-                                                      :caller-contact CALLER
+                                                      :presented-number CALLER
+                                                      :provenance :network-caller
                                                       :now-epoch-min now})
                              utterances
                              {:signature signer})
@@ -117,7 +121,7 @@
       (is (= t19 (get booking "startEpochMin")))
       (is (= 90 (get booking "durationMin"))))
     (testing "the caller was asked for exactly what was missing, in order"
-      (is (= ["何名さまでしょうか。" "お名前をお願いします。" consent/statement]
+      (is (= ["何名さまでしょうか。" "お名前をお願いします。" (consent/statement :ja)]
              (->> replies (remove nil?) butlast (remove #(str/includes? % "承れます"))))))
     (is (= :confirmed (:denwaban/outcome state)))))
 
@@ -181,7 +185,148 @@
   (let [{:keys [replies]}
         (call {:authorization (auth*)}
               ["予約をお願いします" "4人です" "20日の19時でお願いします" "川崎です" "いいえ"])]
-    (is (= consent/statement (last (remove nil? replies))))))
+    (is (= (consent/statement :ja) (last (remove nil? replies))))))
+
+;; ── arriving by forwarding ───────────────────────────────────────────────────
+;;
+;; The first deployment is a restaurant forwarding its existing line to us, and
+;; that is exactly the arrangement in which the presented caller ID may be the
+;; SHOP's number rather than the caller's. A wrong contact is worse than a
+;; missing one: it is never asked about, so the 予約 comes out well formed with a
+;; table held for somebody nobody can reach.
+
+(def SHOP "+81312345678")
+
+(defn- call-arriving [arrival utterances]
+  (let [{:keys [ports store]} (ports* {:authorization (auth*)})]
+    (assoc (session/run-call ports
+                             (uketsuke/initial-state
+                              (merge {:call-ref "call-1" :now-epoch-min now} arrival))
+                             utterances
+                             {:signature signer})
+           :store store)))
+
+(deftest test-a-forwarded-call-does-not-seal-the-shops-own-number
+  (let [{:keys [state]} (call-arriving {:via :forwarded :forwarded-from SHOP
+                                        :presented-number SHOP
+                                        :provenance :network-caller}
+                                       ["予約をお願いします"])]
+    (testing "the shop's own line arriving as caller ID is the diversion showing through"
+      (is (nil? (get-in state [:denwaban/facts :contact])))
+      (is (= :presented-number-is-the-forwarding-line
+             (:denwaban/contact-unavailable state))))))
+
+(deftest test-a-forwarded-call-without-the-original-asks-for-the-number
+  (let [{:keys [replies state]}
+        (call-arriving {:via :forwarded :forwarded-from SHOP
+                        :presented-number "+81399999999"
+                        :provenance :diverted-unknown}
+                       ["予約をお願いします" "4人です" "20日の19時でお願いします" "川崎です"])]
+    (is (nil? (get-in state [:denwaban/facts :contact])))
+    (is (= "お電話番号をお願いします。" (last (remove nil? replies)))
+        "the ordinary slot-filling asks, because the fact is simply absent")))
+
+(deftest test-an-unrecognised-provenance-is-unusable-not-usable
+  (testing "a provenance nobody has thought about yet must not become a fact"
+    (is (nil? (:denwaban/contact
+               (arrival/caller-contact {:presented-number CALLER
+                                        :provenance :some-new-carrier-header}))))
+    (is (nil? (:denwaban/contact
+               (arrival/caller-contact {:presented-number CALLER :provenance nil}))))
+    (is (= CALLER (:denwaban/contact
+                   (arrival/caller-contact {:presented-number CALLER
+                                            :provenance :network-caller}))))))
+
+(deftest test-a-forwarded-call-still-books-once-the-number-is-spoken
+  (let [{:keys [booking state]}
+        (call-arriving {:via :forwarded :forwarded-from SHOP
+                        :presented-number SHOP :provenance :network-caller}
+                       ["予約をお願いします" "4人です" "20日の19時でお願いします" "川崎です"
+                        "090-1111-2222です" "はい"])]
+    (is (= "confirmed" (get booking "state")))
+    (testing "and the 予約 is legible afterwards as one taken through a diversion"
+      (is (= :forwarded (get-in state [:denwaban/arrival :denwaban/via])))
+      (is (= :asked (get-in state [:denwaban/arrival :denwaban/contact-source]))))))
+
+;; ── speaking the caller's language ───────────────────────────────────────────
+
+(deftest test-an-english-call-is-conducted-in-english
+  (let [{:keys [ports]} (ports* {:authorization (auth*)})
+        {:keys [booking replies]}
+        (session/run-call ports
+                          (uketsuke/initial-state {:call-ref "call-2" :locale :en
+                                                   :presented-number CALLER
+                                                   :provenance :network-caller
+                                                   :now-epoch-min now})
+                          ["予約をお願いします" "4人です" "20日の19時でお願いします" "川崎です" "はい"]
+                          {:signature signer})]
+    (is (= "How many people will there be?" (first (remove nil? replies))))
+    (is (some #{(consent/statement :en)} replies))
+    (testing "and the attestation records WHICH sentence was agreed to"
+      (is (= "confirmed" (get booking "state")))
+      (is (= consent/kind (get booking "consentKind"))))))
+
+(deftest test-a-locale-with-no-consent-sentence-books-nothing
+  (testing "falling back to another language would attest to a sentence never said"
+    (let [{:keys [ports]} (ports* {:authorization (auth*)})
+          {:keys [booking]}
+          (session/run-call ports
+                            (uketsuke/initial-state {:call-ref "call-3" :locale :de
+                                                     :presented-number CALLER
+                                                     :provenance :network-caller
+                                                     :now-epoch-min now})
+                            ["予約をお願いします" "4人です" "20日の19時でお願いします" "川崎です" "はい"]
+                            {:signature signer})]
+      (is (nil? booking)))))
+
+(deftest test-policy-is-not-restated-per-language
+  (testing "one policy, phrased in many languages -- so a mistranslation cannot"
+    (testing "turn an expired envelope into a retryable question"
+      (doseq [locale [:ja :en]]
+        (is (:escalate? (uketsuke/respond-to-refusal locale [:authorization-expired])))
+        (is (not (:escalate? (uketsuke/respond-to-refusal locale [:slot-taken]))))))))
+
+;; ── a zone that cannot be resolved ───────────────────────────────────────────
+
+(deftest test-an-unresolvable-zone-ends-in-a-callback-not-a-guess
+  (let [{:keys [store ports]} (ports* {:authorization (auth*)})
+        _ store
+        broken (assoc-in ports [:booking :ctx :offset-at] (constantly nil))
+        {:keys [booking state]}
+        (session/run-call broken
+                          (uketsuke/initial-state {:call-ref "call-4" :presented-number CALLER
+                                                   :provenance :network-caller
+                                                   :now-epoch-min now})
+                          full-call
+                          {:signature signer})]
+    (is (nil? booking))
+    (is (= :escalated (:denwaban/outcome state)))))
+
+(deftest test-layer-propose-refuses-an-unresolvable-zone-itself
+  ;; The call-level test above proves only that SOMETHING refused. The zone is
+  ;; checked twice -- here at propose, and again in yotei.delegation/admit at
+  ;; confirm -- and with both in place, removing either leaves the other one
+  ;; catching it. yotei owns the confirm-side test; this is the propose side.
+  (let [ctx {:authorization (auth*)
+             :confirmed-fn (constantly [])
+             :now-fn (constantly now)
+             :offset-at (constantly nil)
+             :seal-contact (constantly "sealed:1")}
+        out (booking/propose ctx {:yoyaku-id "y-1" :party-size 4 :start-epoch-min t19
+                                  :name "川崎" :contact CALLER
+                                  :consent-ref "c" :consent-kind consent/kind})]
+    (is (get out "refused"))
+    (is (= ["timezone-unresolved"] (get out "reasons"))))
+  (testing "and resolves normally when the zone can be answered"
+    (let [ctx {:authorization (auth*)
+               :confirmed-fn (constantly [])
+               :now-fn (constantly now)
+               :offset-at (constantly 540)
+               :seal-contact (constantly "sealed:1")}
+          out (booking/propose ctx {:yoyaku-id "y-1" :party-size 4 :start-epoch-min t19
+                                    :name "川崎" :contact CALLER
+                                    :consent-ref "c" :consent-kind consent/kind})]
+      (is (= "proposed" (get out "state"))))))
 
 ;; ── consent, one test per layer ──────────────────────────────────────────────
 ;;
@@ -194,7 +339,8 @@
 ;; happened to fire.
 
 (defn- state-with [facts]
-  (uketsuke/absorb (uketsuke/initial-state {:call-ref "call-1" :caller-contact CALLER
+  (uketsuke/absorb (uketsuke/initial-state {:call-ref "call-1" :presented-number CALLER
+                                            :provenance :network-caller
                                             :now-epoch-min now})
                    facts))
 
