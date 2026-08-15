@@ -23,10 +23,30 @@ clojure -M:test    # provider/access 分離 + pipeline 合成 + G2/G7 + HTTP 面
 clojure -M:serve   # consent surface（loopback :1343）
 ```
 
-**Status: R0 scaffold** — `run-session` は raise（G7 outward-gate）。実発着信なし・
-fixtures のみ。`plan-session` は pure でオフライン検証可能。**2026-07-30 に HTTP 面
-（`denwaban.http`）が付いた**ので「socket なし」ではなくなったが、**G7 の天井は変わって
-いない** — socket があることと電話に出られることは別。
+## Status（2026-08-15 更新、ADR-2608150900）
+
+**会話して予約を取るところまでは動く。電話には出られない。** この 2 つは別のことなので、
+1 語の status ではなく能力ごとに書く（`manifest.edn` の `:actor/reach`）:
+
+| | |
+|---|---|
+| 会話（`denwaban.uketsuke`） | ✅ 人数 → 日時 → 名前 → 同意 の slot-filling、満席・時間外・大人数の断り分け、折り返しへのエスカレーション |
+| 予約（`denwaban.yoyaku`） | ✅ `yotei.seat` が卓を選び、`yotei.delegation` が店主署名の封筒で認可し、`yotei.yoyaku` が二重予約を拒否する。**確定した 予約 が実際に出る** |
+| 同意（`denwaban.consent`） | ✅ 電話の相手に DID は無いので **attested**（署名ではない）。`consentKind` を 予約 に刻む |
+| STT / TTS | ⬜ external contract（`com-whisper` / `com-elevenlabs`） |
+| **電話に出る** | 🔒 **G7**（Council Lv6+ + named operator + 明示フラグ + admitted carrier） |
+
+**G7 の位置が変わった。** 以前は `run-session` が丸ごと raise していて、それは正直だった
+——受話器を人間が取っても 予約 にはならなかったからで、会話を 予約 に変えるコードが
+無かった。いまは在る。`run-call` は**渡された**チャネルの上で会話を最後まで走らせ、
+`run-session`（チャネルを**開く**方）だけが G7 を見る。公衆に届くのは「開ける」行為で、
+残りはテストでも operator のソフトフォンでも実回線でも同じ算術だからである。
+
+`clojure -M:test` → 56 tests / 158 assertions。end-to-end は fixture port
+（carrier も model も WebCrypto も無し）だが、**経路上の判断は全部 production のもの**。
+
+**2026-07-30 に付いた HTTP 面（`denwaban.http`）は consent surface のまま**で、
+`can-answer-calls: false` を返し続ける — socket があることと電話に出られることは別。
 
 ## HTTP 面 — listener は1つ、`pending` は存在しない
 
