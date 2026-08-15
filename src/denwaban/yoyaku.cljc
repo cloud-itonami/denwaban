@@ -41,15 +41,25 @@
   "Hold a table. Returns yotei's `proposed` 予約, or a refusal carrying the
   reasons in `yotei.delegation/admit`'s vocabulary so the dialog has one
   refusal language to translate rather than two."
-  [{:keys [authorization confirmed-fn seal-contact]} slot]
+  [{:keys [authorization confirmed-fn seal-contact offset-at]} slot]
   (let [{:keys [party-size start-epoch-min name contact consent-ref consent-kind]} slot
         confirmed (confirmed-fn)
-        flr (delegation/authorized-floor authorization)
+        ;; The offset does not affect which table is free -- `seat/assign` reads
+        ;; tables and overlaps, not hours. It is resolved here anyway so an
+        ;; unresolvable zone is refused at propose, in the same vocabulary the
+        ;; dialog already speaks, rather than surfacing one step later at confirm.
+        offset (when (fn? offset-at)
+                 (let [o (offset-at (:yotei/tz authorization) start-epoch-min)]
+                   (when (integer? o) o)))
+        flr (delegation/authorized-floor authorization (or offset 0))
         assignment (seat/assign flr confirmed start-epoch-min
                                 (:yotei/seating-min authorization) party-size)]
     (cond
       (nil? seal-contact)
       (refusal [:no-contact-seal])
+
+      (nil? offset)
+      (refusal [:timezone-unresolved])
 
       (:yotei/refused assignment)
       (refusal [(case (:yotei/refused assignment)
@@ -82,7 +92,7 @@
   "Confirm through `yotei.delegation`, which re-derives the whole 予約 against
   the owner-signed envelope. denwaban supplies the signature and the two
   verification answers, and nothing else."
-  [{:keys [authorization confirmed-fn now-fn verify-owner verify-delegate]} proposal signature]
+  [{:keys [authorization confirmed-fn now-fn verify-owner verify-delegate offset-at]} proposal signature]
   ;; `signature` may be a function. koe's kernel takes it as an opt decided
   ;; before `propose` runs, which is right for a member signing a slot they
   ;; chose and impossible for a delegate: the table -- and so the calendar DID
@@ -98,6 +108,7 @@
                                       {:yotei/now-epoch-min (now-fn)
                                        :yotei/confirmed (confirmed-fn)
                                        :yotei/party-size (get proposal "partySize")
+                                       :yotei/offset-at offset-at
                                        :yotei/owner-signature-verified? (verify-owner authorization)
                                        :yotei/delegate-signature-verified? (verify-delegate proposal sig)})]
           (cond-> out
@@ -109,15 +120,31 @@
             (assoc :signed-by (get sig "ref"))))))))
 
 (defn open-times
-  "The instants this party could be offered. `yotei.seat` decides; the horizon
-  is the envelope's own, so the receptionist cannot offer further ahead than the
-  owner signed for."
-  [{:keys [authorization confirmed-fn now-fn]} party-size]
-  (let [now (now-fn)]
-    (seat/open-times (delegation/authorized-floor authorization)
-                     now
-                     (+ now (* 1440 (:yotei/horizon-days authorization)))
-                     (confirmed-fn) now party-size)))
+  "The instants this party could be offered. `yotei.seat` decides; the horizon is
+  the envelope's own, so the receptionist cannot offer further ahead than the
+  owner signed for.
+
+  Walked a day at a time because the zone's offset is not constant across the
+  horizon: thirty days from now can be on the other side of a DST transition, and
+  a single offset for the whole range would offer times that `admit` then refuses
+  -- the exact disagreement `yotei.availability` exists to prevent. The offset is
+  resolved at each day's start, so a day containing a transition uses the offset
+  it began with."
+  [{:keys [authorization confirmed-fn now-fn offset-at]} party-size]
+  (let [now (now-fn)
+        zone (:yotei/tz authorization)
+        horizon (* 1440 (long (:yotei/horizon-days authorization)))
+        confirmed (confirmed-fn)]
+    (->> (range 0 (inc (quot horizon 1440)))
+         (mapcat (fn [d]
+                   (let [from (+ now (* d 1440))
+                         to (min (+ from 1440) (+ now horizon))
+                         off (when (fn? offset-at)
+                               (let [o (offset-at zone from)] (when (integer? o) o)))]
+                     (when (and off (< from to))
+                       (seat/open-times (delegation/authorized-floor authorization off)
+                                        from to confirmed now party-size)))))
+         distinct sort vec)))
 
 (defrecord YoteiBooking [ctx]
   ports/IBooking

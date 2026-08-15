@@ -20,7 +20,9 @@
   :consent      :implemented    ; denwaban.consent — attested, stamped, never signed
   :stt          :external-contract
   :tts          :external-contract
-  :telephony    :g7-gated}      ; opening a channel: Council Lv6+ + named operator + flag
+  :telephony    :g7-gated       ; opening a channel: Council Lv6+ + named operator + flag
+  :arrival      :implemented    ; denwaban.arrival — forwarded calls, caller-ID provenance
+  :locales      #{:ja :en}}     ; dialog + consent sentence; a locale with no sentence refuses
 
  ;; Reusable voice-session kernel lives in kotoba-lang/koe (shared library), not
  ;; embedded here — denwaban is the public-benefit instance. Repointed 2026-07-30
@@ -33,7 +35,7 @@
   ;; yotei is a code dependency as of 2026-08-15, not only a contract. Before
   ;; this the repository named yotei in :actor/repository-contracts and called
   ;; none of it, which is why "book" was a stage label rather than a booking.
-  io.github.cloud-itonami/yotei "03f12d9726d6b049170aac7eeeb08235229358b5"}
+  io.github.cloud-itonami/yotei "e85ae8912be6cfb759e613db3241fb30672c290d"}
 
  :actor/repository-contracts
  {:booking {:repository "https://github.com/cloud-itonami/yotei"
@@ -79,6 +81,8 @@
   {:gate/id "G7" :gate/name "outward-gated"        :gate/rule "live inbound/outbound telephony is R0=offline + intent only; live = Council Lv6+ + operator gate + explicit env flag"}
   {:gate/id "G8" :gate/name "sourcing-honesty"     :gate/rule "transcripts/bookings use representative fixtures with provenance; no fabricated call data"}
   {:gate/id "G9" :gate/name "consent-attested-not-signed" :gate/rule "a telephone caller has no DID, so their consent is ATTESTED (denwaban.consent) and stamped consentKind on the 予約; it must never be presentable as yotei's member DID-signed consent (G8 there). Attestation carries that consent was given, when, and to which sentence -- never the recording (G1)"}
+  {:gate/id "G11" :gate/name "caller-id-has-provenance" :gate/rule "a presented number becomes the caller's contact ONLY when its provenance says so (denwaban.arrival). On a forwarded call -- the first deployment shape -- the presented number may be the SHOP's own line; a number equal to the forwarding line is never the caller whatever the carrier labelled it. A wrong contact is worse than a missing one: it is never asked about, and the 予約 looks well formed while holding a table for someone nobody can reach (2026-08-15)"}
+  {:gate/id "G12" :gate/name "consent-in-the-callers-language" :gate/rule "the consent sentence is per locale and the attestation records WHICH sentence was said (consentLocale). A locale with no sentence REFUSES rather than falling back -- attesting that a caller agreed to a sentence never said to them, in a language they may not speak, is an attestation of something that did not happen (2026-08-15)"}
   {:gate/id "G10" :gate/name "unconfirmable-means-callback" :gate/rule "if the owner-signed envelope is expired, or either signature cannot be verified, the call ends with a human callback and the caller is told. Collecting further details is refused -- personal data taken for an act that cannot happen"}]
 
  ;; cells = the session pipeline (telephony → listen → converse → speak → book)
@@ -104,11 +108,12 @@
   :uketsuke "src/denwaban/uketsuke.cljc"
   :yoyaku "src/denwaban/yoyaku.cljc"
   :consent "src/denwaban/consent.cljc"
+  :arrival "src/denwaban/arrival.cljc"
   :social-state-machine "src/denwaban/cells/social_post/state_machine.cljc"}
 
  :actor/tests
  {:runner "clojure" :cmd "clojure -M:test"
-  :verification {:tests 56 :assertions 158 :failures 0 :errors 0}
+  :verification {:tests 65 :assertions 182 :failures 0 :errors 0}
   :suites ["denwaban.test-session" "denwaban.test-transport"
            "denwaban.test-social" "denwaban.test-state-machine"
            "denwaban.test-http" "denwaban.test-uketsuke"]
