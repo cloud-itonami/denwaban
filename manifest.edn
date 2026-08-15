@@ -19,13 +19,13 @@
   :booking      :implemented    ; denwaban.yoyaku -> yotei.seat + yotei.delegation, confirmed 予約
   :consent      :implemented    ; denwaban.consent — attested, stamped, never signed
   :telephony    :g7-gated       ; opening a channel: Council Lv6+ + named operator + flag
-  :arrival      :implemented    ; denwaban.arrival — forwarded calls, caller-ID provenance
-  :webhook-auth :implemented    ; denwaban.carrier — Twilio HMAC-SHA1, known-answer tested
+  :arrival      :implemented    ; koe.arrival — forwarded calls, caller-ID provenance
+  :webhook-auth :implemented    ; koe.carrier — Twilio HMAC-SHA1, known-answer tested
   :extraction   :implemented    ; denwaban.kikitori — deterministic; the model is the FALLBACK
   :tts          :available-unwired ; macOS `say` on every fleet node, ulaw@8000 (measured 2026-08-15)
   :serifu       :implemented    ; denwaban.serifu — the closed question set pre-rendered; 0.02s vs 0.65-1.14s
   :stt          :absent         ; com-whisper is a clean-room stub; infer.murakumo.cloud is completion-only
-  :media-bridge :core-implemented ; denwaban.media — frames, G.711, utterance segmentation, WAV header (the socket is the host's)
+  :media-bridge :implemented    ; koe.bridge decides; denwaban.ws opens the sockets (POST /voice, WS /media)
   :locales      #{:ja :en}}     ; dialog + consent sentence; a locale with no sentence refuses
 
  ;; Reusable voice-session kernel lives in kotoba-lang/koe (shared library), not
@@ -114,18 +114,18 @@
   :uketsuke "src/denwaban/uketsuke.cljc"
   :yoyaku "src/denwaban/yoyaku.cljc"
   :consent "src/denwaban/consent.cljc"
-  :arrival "src/denwaban/arrival.cljc"
-  :carrier "src/denwaban/carrier.cljc"
   :kikitori "src/denwaban/kikitori.cljc"
   :serifu "src/denwaban/serifu.cljc"
-  :media "src/denwaban/media.cljc"
+  :ws "src/denwaban/ws.clj"
   :latency "docs/latency.md"
   :carrier-runbook "docs/carrier-connection.md"
   :social-state-machine "src/denwaban/cells/social_post/state_machine.cljc"}
 
  :actor/tests
  {:runner "clojure" :cmd "clojure -M:test"
-  :verification {:tests 119 :assertions 377 :failures 0 :errors 0}
+  :verification {:tests 98 :assertions 323 :failures 0 :errors 0}
+  ;; 21 fewer than before because media/carrier/arrival moved to kotoba-lang/koe
+  ;; with their tests (49 tests / 129 assertions there).
   :suites ["denwaban.test-session" "denwaban.test-transport"
            "denwaban.test-social" "denwaban.test-state-machine"
            "denwaban.test-http" "denwaban.test-uketsuke"]

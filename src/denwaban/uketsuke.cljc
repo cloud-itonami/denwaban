@@ -31,7 +31,7 @@
   caller is told so. A receptionist that keeps taking details it cannot act on
   is collecting personal data for nothing (G3)."
   (:require [clojure.string :as str]
-            [denwaban.arrival :as arrival]
+            [koe.arrival :as arrival]
             [denwaban.consent :as consent]
             [koe.ports :as ports]))
 
@@ -46,7 +46,7 @@
 (defn initial-state
   "Start a call.
 
-  The caller's number is taken from `denwaban.arrival`, never from the presented
+  The caller's number is taken from `koe.arrival`, never from the presented
   caller ID directly. On a forwarded call -- the first way this is deployed, and
   the cheapest -- the presented number may be the shop's own line rather than the
   caller's, and a wrong contact is worse than a missing one: it is never asked
@@ -57,12 +57,12 @@
   `:locale` decides which language is spoken AND which consent sentence is
   attested to; it is carried on the state so both come from one place."
   [{:keys [call-ref now-epoch-min locale] :as call}]
-  (let [{:denwaban/keys [contact reason]} (arrival/caller-contact call)]
+  (let [{:koe/keys [contact reason]} (arrival/caller-contact call)]
     {:denwaban/call-ref call-ref
      :denwaban/now-epoch-min now-epoch-min
      :denwaban/locale (or locale consent/default-locale)
      :denwaban/arrival (arrival/describe call)
-     :denwaban/contact-unavailable reason
+     :koe/contact-unavailable reason
      :denwaban/facts (cond-> {} contact (assoc :contact contact))
      :denwaban/offered []
      :denwaban/turns 0
@@ -224,7 +224,7 @@
   `{:kind :ask :fact k}` | `{:kind :book}` | `{:kind :escalate :reason k}`"
   [state]
   (cond
-    (= :escalated (:denwaban/outcome state)) {:kind :escalate :reason (:denwaban/reason state)}
+    (= :escalated (:denwaban/outcome state)) {:kind :escalate :reason (:koe/reason state)}
     (= :confirmed (:denwaban/outcome state)) {:kind :done}
     (complete? state) (if (consented? state)
                         {:kind :book}
@@ -301,7 +301,7 @@
   [state reasons]
   (let [{:keys [retry escalate? reply]} (respond-to-refusal (:denwaban/locale state) reasons)]
     (if escalate?
-      {:state (assoc state :denwaban/outcome :escalated :denwaban/reason (first reasons))
+      {:state (assoc state :denwaban/outcome :escalated :koe/reason (first reasons))
        :action :escalate
        :reply reply}
       {:state (update state :denwaban/facts dissoc retry)
