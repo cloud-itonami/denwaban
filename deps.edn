@@ -34,4 +34,9 @@
          :main-opts ["-i" "run_tests.clj"]}
   ;; clojure -M:serve -> the consent surface (loopback :1343). One listener; see
   ;; denwaban.http's docstring for why there is no operator port.
-  :serve {:main-opts ["-m" "denwaban.http"]}}}
+  :serve {:main-opts ["-m" "denwaban.http"]}
+  ;; clojure -M:serifu [dir] [voice]
+  ;; -> render the closed set of receptionist lines to ulaw@8000 files. Build
+  ;;    time, never call time: synthesis costs 0.65-1.14s and reading a rendered
+  ;;    file costs 0.02s (measured 2026-08-15).
+  :serifu {:main-opts ["-m" "denwaban.render-serifu"]}}}
