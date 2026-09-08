@@ -30,7 +30,7 @@
   signature cannot be verified, the call ends with a human callback and the
   caller is told so. A receptionist that keeps taking details it cannot act on
   is collecting personal data for nothing (G3)."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [koe.arrival :as arrival]
             [denwaban.consent :as consent]
             [koe.ports :as ports]))

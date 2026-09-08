@@ -9,7 +9,7 @@
 
   Every expectation here was measured from the function before it was written down,
   not assumed from reading it."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]
             [denwaban.cells.social-post.state-machine :as sm]))
 

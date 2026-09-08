@@ -6,7 +6,7 @@
   the server runs on a real port, a real HTTP request arrives, and the answer is
   read back. Without this the routing, the signature plumbing and the response
   shape are three things nobody has ever run."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]
             [denwaban.ws :as ws]
             [koe.carrier :as carrier]

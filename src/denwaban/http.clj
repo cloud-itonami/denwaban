@@ -41,7 +41,7 @@
   gets added, and `pending` becomes reachable. Until then the shape of this file is
   the honest one."
   (:require [clojure.data.json :as json]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [denwaban.session :as session])
   (:import [com.sun.net.httpserver HttpExchange HttpHandler HttpServer]
            [java.io ByteArrayOutputStream]
