@@ -33,7 +33,7 @@
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.java.shell :as shell]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [denwaban.serifu :as serifu]
             [denwaban.session :as session]
             [denwaban.uketsuke :as uketsuke]

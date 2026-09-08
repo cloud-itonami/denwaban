@@ -17,7 +17,7 @@
   default, and an attestation that carries the audio would turn every 予約 into
   a retained voice record of a member of the public. The attestation carries
   that consent was given, when, and to what text — not the voice that gave it."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (def kind "telephone-attested")
 

@@ -37,7 +37,7 @@
   **Names, except where the caller marked one.** 「川崎です」 and 「川崎と申します」
   are explicit. Anything else risks recording a fragment of the sentence as
   somebody's name."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 ;; ── numbers ──────────────────────────────────────────────────────────────────
 

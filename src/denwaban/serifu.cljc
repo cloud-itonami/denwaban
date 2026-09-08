@@ -27,7 +27,7 @@
   a confirmation naming a particular 予約 — are one turn at the end of a call
   rather than every turn, and paying 0.7 s once is fine. What must never happen
   is a line the receptionist cannot say."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [denwaban.consent :as consent]
             [denwaban.uketsuke :as uketsuke]))
 
