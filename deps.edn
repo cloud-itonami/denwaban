@@ -42,7 +42,7 @@
         http-kit/http-kit {:mvn/version "2.8.0"}}
  :aliases
  {:test {:extra-paths ["test"]
-         :main-opts ["-i" "run_tests.clj"]}
+         :main-opts ["-i" "run_tests.cljk"]}
   ;; clojure -M:serve -> the consent surface (loopback :1343). One listener; see
   ;; denwaban.http's docstring for why there is no operator port.
   :serve {:main-opts ["-m" "denwaban.http"]}
