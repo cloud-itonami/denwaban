@@ -19,8 +19,8 @@ eSIM は交換可能な IP access path であり、電話番号/PSTN provider �
 設計確定: **ADR-2606271930**。詳細は `CLAUDE.md`。
 
 ```
-clojure -M:test    # provider/access 分離 + pipeline 合成 + G2/G7 + HTTP 面（38 tests / 111 assertions）
-clojure -M:serve   # consent surface（loopback :1343）
+kbb -M:test    # provider/access 分離 + pipeline 合成 + G2/G7 + HTTP 面（38 tests / 111 assertions）
+kbb -M:serve   # consent surface（loopback :1343）
 ```
 
 ## Status（2026-08-15 更新、ADR-2608150900）
@@ -44,7 +44,7 @@ clojure -M:serve   # consent surface（loopback :1343）
 `run-session`（チャネルを**開く**方）だけが G7 を見る。公衆に届くのは「開ける」行為で、
 残りはテストでも operator のソフトフォンでも実回線でも同じ算術だからである。
 
-`clojure -M:test` → 65 tests / 182 assertions。end-to-end は fixture port
+`kbb -M:test` → 65 tests / 182 assertions。end-to-end は fixture port
 （carrier も model も WebCrypto も無し）だが、**経路上の判断は全部 production のもの**。
 
 **2026-07-30 に付いた HTTP 面（`denwaban.http`）は consent surface のまま**で、

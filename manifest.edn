@@ -122,7 +122,7 @@
   :social-state-machine "src/denwaban/cells/social_post/state_machine.cljk"}
 
  :actor/tests
- {:runner "clojure" :cmd "clojure -M:test"
+ {:runner "clojure" :cmd "kbb -M:test"
   :verification {:tests 98 :assertions 323 :failures 0 :errors 0}
   ;; 21 fewer than before because media/carrier/arrival moved to kotoba-lang/koe
   ;; with their tests (49 tests / 129 assertions there).

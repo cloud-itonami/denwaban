@@ -7,7 +7,7 @@
 
 | | 状態 | 測り方 |
 |---|---|---|
-| 会話 → 席 → 確定した 予約 | ✅ 動く | `clojure -M:test`（79 tests / 218 assertions） |
+| 会話 → 席 → 確定した 予約 | ✅ 動く | `kbb -M:test`（79 tests / 218 assertions） |
 | 着信 webhook の署名検証 | ✅ `denwaban.carrier` | Twilio 公開ベクタで既知回答テスト |
 | 転送で来た通話の扱い | ✅ `denwaban.arrival` | 転送時は発信者番号を事実にしない |
 | **日本語 TTS（喋る）** | ✅ **fleet 全ノードに既に在る** | `say -v Kyoko`。下記参照 |

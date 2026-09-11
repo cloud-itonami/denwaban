@@ -43,14 +43,14 @@
  :aliases
  {:test {:extra-paths ["test"]
          :main-opts ["-i" "run_tests.cljk"]}
-  ;; clojure -M:serve -> the consent surface (loopback :1343). One listener; see
+  ;; kbb -M:serve -> the consent surface (loopback :1343). One listener; see
   ;; denwaban.http's docstring for why there is no operator port.
   :serve {:main-opts ["-m" "denwaban.http"]}
-  ;; clojure -M:serifu [dir] [voice]
+  ;; kbb -M:serifu [dir] [voice]
   ;; -> render the closed set of receptionist lines to ulaw@8000 files. Build
   ;;    time, never call time: synthesis costs 0.65-1.14s and reading a rendered
   ;;    file costs 0.02s (measured 2026-08-15).
   :serifu {:main-opts ["-m" "denwaban.render-serifu"]}
-  ;; clojure -M:media [port] -> the live-call sockets (POST /voice, WS /media).
+  ;; kbb -M:media [port] -> the live-call sockets (POST /voice, WS /media).
   ;; Needs a speech engine at :engine-url and rendered lines in :serifu-dir.
   :media {:main-opts ["-m" "denwaban.ws"]}}}

@@ -83,7 +83,7 @@ N5 no detection-evasion / caller-ID spoofing use.
 ## Build / test
 
 ```
-clojure -M:test    # repository-native contract tests (6 tests / 16 assertions)
+kbb -M:test    # repository-native contract tests (6 tests / 16 assertions)
 ```
 
 `bb.edn` was removed in the same pass: babashka is retired as a script host
