@@ -88,7 +88,7 @@
 
 (defn manifest
   "Everything a build step needs: for each locale, the lines and where each one
-  is written. Used by `denwaban.render-serifu` (`clojure -M:serifu`)."
+  is written. Used by `denwaban.render-serifu` (`kbb -M:serifu`)."
   [{:keys [dir voice] :or {dir "resources/serifu"}}]
   (for [locale (sort-by name locales)
         [id text] (sort (phrases locale))]

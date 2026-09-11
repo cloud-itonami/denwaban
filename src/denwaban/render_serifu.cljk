@@ -1,7 +1,7 @@
 (ns denwaban.render-serifu
   "Render the receptionist's closed set of lines ahead of time.
 
-  `clojure -M:serifu [dir] [voice]`
+  `kbb -M:serifu [dir] [voice]`
 
   Run at build time, not on a call. Every line the dialog can say becomes an
   `ulaw@8000` mono file — the carrier's own format, so nothing is converted while
