@@ -110,16 +110,16 @@
 
  :actor/resources
  {:manifest "manifest.edn"
-  :session "src/denwaban/session.cljc"
-  :uketsuke "src/denwaban/uketsuke.cljc"
-  :yoyaku "src/denwaban/yoyaku.cljc"
-  :consent "src/denwaban/consent.cljc"
-  :kikitori "src/denwaban/kikitori.cljc"
-  :serifu "src/denwaban/serifu.cljc"
-  :ws "src/denwaban/ws.clj"
+  :session "src/denwaban/session.cljk"
+  :uketsuke "src/denwaban/uketsuke.cljk"
+  :yoyaku "src/denwaban/yoyaku.cljk"
+  :consent "src/denwaban/consent.cljk"
+  :kikitori "src/denwaban/kikitori.cljk"
+  :serifu "src/denwaban/serifu.cljk"
+  :ws "src/denwaban/ws.cljk"
   :latency "docs/latency.md"
   :carrier-runbook "docs/carrier-connection.md"
-  :social-state-machine "src/denwaban/cells/social_post/state_machine.cljc"}
+  :social-state-machine "src/denwaban/cells/social_post/state_machine.cljk"}
 
  :actor/tests
  {:runner "clojure" :cmd "clojure -M:test"
