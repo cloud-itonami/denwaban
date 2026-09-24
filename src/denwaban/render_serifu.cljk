@@ -10,16 +10,16 @@
   Re-runnable: a line whose file already exists is skipped, and because the file
   name is content-addressed, a reworded line renders to a NEW name rather than
   reusing a stale recording. Deleting the directory is always safe."
-  (:require [clojure.java.io :as io]
+  (:require [kotoba.io :as io]
             [clojure.java.shell :as shell]
             [denwaban.serifu :as serifu]))
 
 (defn -main [& [dir voice]]
   (let [dir (or dir "resources/serifu")
         entries (serifu/manifest {:dir dir :voice voice})]
-    (.mkdirs (io/file dir))
+    (io/mkdirs (io/file dir))
     (doseq [{:serifu/keys [path text command locale]} entries]
-      (if (.exists (io/file path))
+      (if (io/exists? (io/file path))
         (println "skip  " path)
         (let [{:keys [exit err]} (apply shell/sh command)]
           (if (zero? exit)

@@ -40,7 +40,7 @@
   When G7 opens (Council Lv6+ plus a named operator), the operator listener is what
   gets added, and `pending` becomes reachable. Until then the shape of this file is
   the honest one."
-  (:require [clojure.data.json :as json]
+  (:require [kotoba.bytes :as kbytes] [kotoba.json :as json]
             [kotoba.lang.text :as str]
             [denwaban.session :as session])
   (:import [com.sun.net.httpserver HttpExchange HttpHandler HttpServer]
@@ -75,7 +75,7 @@
             :else (do (.write out buf 0 n) (recur (+ total n)))))))))
 
 (defn- send! [^HttpExchange exchange status payload]
-  (let [bytes (.getBytes (json/write-str payload) StandardCharsets/UTF_8)]
+  (let [bytes (kbytes/utf8-bytes (json/write-str payload))]
     (doto (.getResponseHeaders exchange)
       (.set "Content-Type" "application/json; charset=utf-8")
       (.set "Cache-Control" "no-store"))
