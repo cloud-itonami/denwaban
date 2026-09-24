@@ -30,7 +30,7 @@
   refuses a blank transcript, and `whisper.engine` refuses to call a crash
   silence. What this file adds is that the reason reaches the log instead of
   being swallowed by a `catch` that returns nil."
-  (:require [clojure.data.json :as json]
+  (:require [kotoba.http.form-urlencoded :as form-urlencoded] [kotoba.json :as json]
             [clojure.java.io :as io]
             [clojure.java.shell :as shell]
             [kotoba.lang.text :as str]
@@ -186,8 +186,8 @@
     (into {}
           (for [pair (str/split raw #"&") :when (seq pair)]
             (let [[k v] (str/split pair #"=" 2)]
-              [(java.net.URLDecoder/decode (str k) "UTF-8")
-               (java.net.URLDecoder/decode (str (or v "")) "UTF-8")])))))
+              [(form-urlencoded/form-decode (str k))
+               (form-urlencoded/form-decode (str (or v "")))])))))
 
 (defn voice-webhook
   "The carrier's inbound-call webhook."
