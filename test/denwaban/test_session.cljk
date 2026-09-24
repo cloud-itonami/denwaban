@@ -1,5 +1,5 @@
 (ns denwaban.test-session
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [denwaban.session :as s]))
 
 (deftest pipeline-composes-existing-actors

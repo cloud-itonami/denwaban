@@ -1,4 +1,4 @@
-(require '[clojure.test :as t])
+(require '[kotoba.test :as t])
 
 (def suites '[denwaban.test-session denwaban.test-transport denwaban.test-social denwaban.test-state-machine
               denwaban.test-http denwaban.test-uketsuke denwaban.test-kikitori denwaban.test-serifu denwaban.test-ws])

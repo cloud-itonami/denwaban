@@ -10,7 +10,7 @@
   Every expectation here was measured from the function before it was written down,
   not assumed from reading it."
   (:require [kotoba.lang.text :as str]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [denwaban.cells.social-post.state-machine :as sm]))
 
 (defn- drive [state] (get (sm/transition-to-drafted state) "cell_state"))

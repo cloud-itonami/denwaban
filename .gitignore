@@ -1,3 +1,4 @@
 .cpcache/
 __pycache__/
 *.pyc
+.nbb/

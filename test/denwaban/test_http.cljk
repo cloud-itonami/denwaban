@@ -6,7 +6,7 @@
   must answer the first -- with the gate that refuses -- rather than the second, and
   rather than nothing at all."
   (:require [clojure.data.json :as json]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [denwaban.http :as http])
   (:import [java.net URI]
            [java.net.http HttpClient HttpRequest HttpRequest$BodyPublishers

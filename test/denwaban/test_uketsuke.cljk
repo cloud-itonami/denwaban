@@ -11,7 +11,7 @@
   The refusal tests matter at least as much. A receptionist that books when it
   should and also books when it should not is worse than one that never books."
   (:require [kotoba.lang.text :as str]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [koe.arrival :as arrival]
             [denwaban.consent :as consent]
             [denwaban.session :as session]

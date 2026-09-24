@@ -12,7 +12,7 @@
   The other half of this suite is refusals. Every function returns nil rather
   than a guess, because an absent field costs one more question and a wrong one
   costs a party of six at a table for two."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [denwaban.kikitori :as k]))
 
 ;; 2026-08-20 is a Thursday. now = Tuesday 2026-08-18 12:00 JST.
