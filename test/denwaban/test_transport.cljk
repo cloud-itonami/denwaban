@@ -1,5 +1,5 @@
 (ns denwaban.test-transport
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [denwaban.transport :as transport]))
 
 (def full-voice

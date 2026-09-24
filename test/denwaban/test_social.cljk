@@ -1,5 +1,5 @@
 (ns denwaban.test-social
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [denwaban.cells.social-post.state-machine :as state-machine]
             [denwaban.social :as social]))
 
