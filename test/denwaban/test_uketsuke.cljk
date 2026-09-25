@@ -10,7 +10,7 @@
 
   The refusal tests matter at least as much. A receptionist that books when it
   should and also books when it should not is worse than one that never books."
-  (:require [kotoba.lang.text :as str]
+  (:require [kotoba.lang.error :as kerror] [kotoba.lang.text :as str]
             [kotoba.test :refer [deftest is testing]]
             [koe.arrival :as arrival]
             [denwaban.consent :as consent]
@@ -377,7 +377,7 @@
 ;; ── G7 still gates the thing it always gated ─────────────────────────────────
 
 (deftest test-opening-a-live-channel-is-still-refused
-  (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs cljs.core/ExceptionInfo)
+  (is (thrown? kerror/ExceptionInfo
                (session/run-session {}))))
 
 (deftest test-g7-needs-all-three
@@ -389,7 +389,7 @@
   (is (session/g7-open? {:council-level 6 :operator "jun" :live-enabled? true})))
 
 (deftest test-an-open-g7-without-a-carrier-still-refuses
-  (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs cljs.core/ExceptionInfo)
+  (is (thrown? kerror/ExceptionInfo
                (session/run-session {:g7 {:council-level 6 :operator "jun" :live-enabled? true}
                                      :transport-plan {:status :held :reasons [:no-admitted-telephony-provider]}}))))
 

@@ -31,7 +31,7 @@
   silence. What this file adds is that the reason reaches the log instead of
   being swallowed by a `catch` that returns nil."
   (:require [kotoba.http.form-urlencoded :as form-urlencoded] [kotoba.json :as json]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [clojure.java.shell :as shell]
             [kotoba.lang.text :as str]
             [denwaban.serifu :as serifu]
@@ -112,7 +112,7 @@
                  (when-not (zero? exit)
                    (println "denwaban.ws: synthesis failed:" err))
                  (when (zero? exit) tmp)))]
-    (when (and path (.exists (io/file path)))
+    (when (and path (io/exists? (io/file path)))
       (let [all (with-open [in (io/input-stream (io/file path))] (.readAllBytes in))
             ;; `say` pads its header, so find the data chunk rather than assuming
             ;; a size -- assuming 44 or 58 puts header bytes into the audio.
