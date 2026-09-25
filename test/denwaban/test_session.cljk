@@ -1,5 +1,5 @@
 (ns denwaban.test-session
-  (:require [kotoba.test :refer [deftest is testing]]
+  (:require [kotoba.lang.error :as kerror] [kotoba.test :refer [deftest is testing]]
             [denwaban.session :as s]))
 
 (deftest pipeline-composes-existing-actors
@@ -41,5 +41,5 @@
 
 (deftest run-session-is-r0-gated
   (testing "G7: live call raises at R0"
-    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs cljs.core/ExceptionInfo)
+    (is (thrown? kerror/ExceptionInfo
                  (s/run-session {})))))
