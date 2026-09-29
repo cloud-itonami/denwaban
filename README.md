@@ -16,7 +16,7 @@ eSIM は交換可能な IP access path であり、電話番号/PSTN provider �
 > `cloud-itonami/yotei`（同名の `kotoba-lang/yotei` とは別 repo）。GitHub の redirect が
 > 生きているため、この drift は壊れずに見えないまま残っていた。
 
-設計確定: **ADR-2606271930**。詳細は `CLAUDE.md`。
+設計確定: **ADR-2606271930**。詳細は `AGENTS.md`。
 
 ```
 kbb -M:test    # provider/access 分離 + pipeline 合成 + G2/G7 + HTTP 面（38 tests / 111 assertions）
