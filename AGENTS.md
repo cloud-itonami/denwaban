@@ -25,7 +25,7 @@ invariant and member-signed confirmation are guaranteed by yotei, not re-impleme
 ## Composition (no duplicate implementation)
 
 denwaban is **mostly glue**. The reusable session kernel (telephony/STT/TTS/booking
-ports + dialog loop) lives in **`kotoba-lang/koe`** (shared library), not here.
+ports + dialog loop) lives in **`kotoba-lang/koe`** (now `lib/kotoba.koe` in `kotoba-lang/kotoba`; the old repository is retired) (shared library), not here.
 The pieces it binds already exist:
 
 | piece | repository | role |
@@ -35,7 +35,7 @@ The pieces it binds already exist:
 | TTS (発話) | `kotoba-lang/com-elevenlabs` | text → speech |
 | 予約 | **`cloud-itonami/yotei`** | booking (delegation target, single source of truth) |
 | Web 着信 | WebRTC transport — provenance unsettled, see below | soft-phone Live transport (ADR-2606271800) |
-| kernel | **`kotoba-lang/koe`** | reusable ports + dialog loop (shared library) |
+| kernel | **`kotoba-lang/koe`** (now `lib/kotoba.koe` in `kotoba-lang/kotoba`; the old repository is retired) | reusable ports + dialog loop (shared library) |
 
 ## Reference realignment (2026-07-30, ADR-2607300300 step 3)
 
